@@ -11,8 +11,8 @@ st.set_page_config(page_title="SwiftSense | AI Fraud Monitor", page_icon="ðŸ›¡ï¸
 def load_assets():
     """Load the trained model and column metadata."""
     try:
-        model = joblib.load('src/swift_sense_model.pkl')
-        model_cols = joblib.load('src/model_columns.pkl')
+        model = joblib.load('swift_sense_model.pkl')
+        model_cols = joblib.load('model_columns.pkl')
         return model, model_cols
     except FileNotFoundError:
         st.error("Model files not found. Please run engine.py first to train the model.")
