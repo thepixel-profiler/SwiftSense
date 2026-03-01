@@ -99,10 +99,10 @@ if __name__ == "__main__":
 
 # Inside your if __name__ == "__main__": block, after training:
 # Save the model
-joblib.dump(swift_model, 'src/swift_sense_model.pkl')
+joblib.dump(swift_model, 'swift_sense_model.pkl')
 
 # Save the column names to ensure app.py uses the same order
 model_columns = list(X_train.columns)
-joblib.dump(model_columns, 'src/model_columns.pkl')
+joblib.dump(model_columns, 'model_columns.pkl')
 
 print("Model and columns saved successfully!")
