@@ -2,21 +2,28 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-from datetime import datetime
+import os
 
 # --- CONFIGURATION & MODEL LOADING ---
 st.set_page_config(page_title="SwiftSense | AI Fraud Monitor", page_icon="🛡️", layout="wide")
 
 @st.cache_resource
 def load_assets():
-    """Load the trained model and column metadata."""
+    """Load the trained model and column metadata with correct pathing."""
     try:
-        model = joblib.load('swift_sense_model.pkl')
-        model_cols = joblib.load('model_columns.pkl')
+        # Use relative paths that point to the src folder
+        model = joblib.load('src/swift_sense_model.pkl')
+        model_cols = joblib.load('src/model_columns.pkl')
         return model, model_cols
     except FileNotFoundError:
-        st.error("Model files not found. Please run engine.py first to train the model.")
-        return None, None
+        # Fallback for local testing if running from within the src folder
+        try:
+            model = joblib.load('swift_sense_model.pkl')
+            model_cols = joblib.load('model_columns.pkl')
+            return model, model_cols
+        except FileNotFoundError:
+            st.error("Model files not found in 'src/' or root. Please ensure .pkl files are uploaded to GitHub.")
+            return None, None
 
 model, model_cols = load_assets()
 
@@ -42,7 +49,6 @@ def get_user_input():
     step = st.sidebar.slider("Step (Hour of Month)", 0, 744, 150)
     
     # Simulation: Step Count (Velocity)
-    # In a real app, this would be queried from a DB. Here we let the user simulate it.
     step_count = st.sidebar.number_input("Transactions in this Hour (Velocity)", min_value=1, value=1)
 
     return {
@@ -67,15 +73,13 @@ def process_for_prediction(input_dict, columns):
     df['orig_balance_err'] = df['newbalanceOrig'] + df['amount'] - df['oldbalanceOrg']
     df['dest_balance_err'] = df['oldbalanceDest'] + df['amount'] - df['newbalanceDest']
     
-    # Amount Deviation (Simplified for single input)
-    # In production, you'd compare this to a stored mean. 
-    # Here we assume a baseline mean for the demo.
+    # Amount Deviation
     df['amount_diff_avg'] = df['amount'] - 150000 
     
     # 2. One-Hot Encoding
     df = pd.get_dummies(df, columns=['type'])
     
-    # 3. Align with training columns (Filling missing types with 0)
+    # 3. Align with training columns
     for col in columns:
         if col not in df.columns:
             df[col] = 0
@@ -92,7 +96,7 @@ with col1:
 with col2:
     st.write("#### Risk Analysis")
     if st.button("Run SwiftSense Audit", use_container_width=True):
-        if model:
+        if model is not None:
             # Transform input
             final_input = process_for_prediction(user_data, model_cols)
             
@@ -108,7 +112,7 @@ with col2:
                 st.success(f"### ✅ TRANSACTION SECURE (Probability: {prob:.2%})")
                 st.balloons()
         else:
-            st.error("Model engine is offline.")
+            st.error("Model engine is offline. Check if .pkl files are in the 'src' folder.")
 
 # --- FOOTER ---
 st.divider()
